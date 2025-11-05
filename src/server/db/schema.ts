@@ -14,8 +14,12 @@ export const receipt = pgTable('receipt', {
 export const receiptItem = pgTable('receipt_item', {
     id: uuid('id').primaryKey().defaultRandom(),
     receiptId: uuid("receipt_id").notNull().references(() => receipt.id, { onDelete: "cascade" }),
-    price: numeric('price', { precision: 10, scale: 2 }).notNull(),
+    price: numeric('price', { precision: 10, scale: 2 }),
     rawText: varchar('raw_text', { length: 255 }),
     interpretedText: varchar('interpreted_text', { length: 1027 }),
     quantity: numeric('quantity', { precision: 5, scale: 2 }).default('1'),
 })
+
+export type ReceiptItemSelect = typeof receiptItem.$inferSelect;
+export type ReceiptItemInsert = typeof receiptItem.$inferInsert;
+

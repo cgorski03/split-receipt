@@ -1,25 +1,41 @@
+import { createServerFn } from "@tanstack/react-start";
 import { db } from "../db";
-import { receipt } from "../db/schema";
+import { receipt, receiptItem, ReceiptItemInsert } from "../db/schema";
 import { google } from "./google";
 import { parseReceiptItems } from "./parse";
 
-type ParsedReceiptResponse = {
-    url: URL;
-}
-export async function parseReceiptImage(file: File): Promise<ParsedReceiptResponse> {
-    const buffer = await file.arrayBuffer();
-    const ai = google();
-    const parseResult = await parseReceiptItems(ai, buffer);
-    const uuid = crypto.randomUUID();
+export const uploadReceipt = createServerFn({ method: 'POST' })
+    .inputValidator((data: FormData) => data)
+    .handler(async ({ data }) => {
+        const file = data.get('file') as File;
+        const buffer = await file.arrayBuffer();
+        const createdBy = data.get('createdBy') as string;
 
-    await db.insert(receipt).values({
-        id: uuid,
-        title: parseResult.metadata.restaurant ?? 'No Title',
-        subtotal: parseResult.subtotal?.toString() ?? null,
-        tax: parseResult.tax?.toString() ?? null,
-        tip: parseResult.tip?.toString() ?? null,
-        grandTotal: parseResult.total?.toString() ?? null,
-        rawResponse: JSON.stringify(parseResult),
+        if (!file) throw new Error('No file provided');
+        if (!createdBy) throw new Error('Name required');
+
+        const ai = google();
+        const parsed = await parseReceiptItems(ai, buffer);
+        const receiptId = crypto.randomUUID();
+
+        await db.insert(receipt).values({
+            id: receiptId,
+            title: parsed.metadata.restaurant ?? 'No Title',
+            subtotal: parsed.subtotal?.toString() ?? null,
+            tax: parsed.tax?.toString() ?? null,
+            tip: parsed.tip?.toString() ?? null,
+            grandTotal: parsed.total?.toString() ?? null,
+            rawResponse: JSON.stringify(parsed),
+        });
+
+        const itemDbObject: ReceiptItemInsert[] = parsed.items.map((item) => (
+            {
+                receiptId: receiptId,
+                price: item.price?.toString() ?? null,
+                rawText: item.rawText,
+                interpretedText: item.interpreted
+            }
+        ))
+        await db.insert(receiptItem).values(itemDbObject);
+        return { url: `${process.env.VITE_PUBLIC_APPLICATION_URL}/receipt/${receiptId}` }
     });
-
-}
