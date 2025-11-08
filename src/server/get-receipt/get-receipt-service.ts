@@ -6,37 +6,42 @@ export type ReceiptItemDto = {
     id: string;
     rawText: string;
     interpretedText: string;
-    price: string;
-    quantity: string;
+    price: number;
+    quantity: number;
 }
 export type ReceiptDto = {
     id: string;
     title: string | null;
-    subtotal: string | null;
-    tax: string | null;
-    tip: string | null;
-    grandTotal: string | null;
+    subtotal: number | null;
+    tax: number | null;
+    tip: number | null;
+    grandTotal: number | null;
     createdAt: Date | null;
     items: ReceiptItemDto[]
 
-} | null
-const generateReceiptDtoFromDbReceipt = (receipt: Awaited<ReturnType<typeof getAllReceiptInfo>>): ReceiptDto => {
-    if (!receipt) return null;
+} | null;
+
+const parseNullable = (v: string | null): number | null =>
+    v === null ? null : parseFloat(v)
+
+const generateReceiptDtoFromDbReceipt = (
+    receipt: Awaited<ReturnType<typeof getAllReceiptInfo>>,
+): ReceiptDto => {
+    if (!receipt) return null
     return {
         id: receipt.id,
         title: receipt.title,
-        subtotal: receipt.subtotal,
-        tax: receipt.tax,
-        tip: receipt.tip,
-        grandTotal: receipt.grandTotal,
-        // dealing with why this is ever null later 
+        subtotal: parseNullable(receipt.subtotal),
+        tax: parseNullable(receipt.tax),
+        tip: parseNullable(receipt.tip),
+        grandTotal: parseNullable(receipt.grandTotal),
         createdAt: receipt.createdAt,
         items: receipt.items.map((item) => ({
             id: item.id,
             rawText: item.rawText,
             interpretedText: item.interpretedText,
-            price: item.price,
-            quantity: item.quantity
+            price: parseFloat(item.price),
+            quantity: parseFloat(item.quantity),
         })),
     }
 }
