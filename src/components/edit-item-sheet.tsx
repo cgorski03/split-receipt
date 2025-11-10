@@ -10,8 +10,12 @@ function ReceiptItemSheet(props: {
     item: ReceiptItemDto | null,
     setCurrentlyEditingItem: (item: ReceiptItemDto | null) => void,
     handleSaveItem: (item: ReceiptItemDto) => void,
+    handleDeleteItem: (item: ReceiptItemDto) => void,
 }) {
-    const { item, setCurrentlyEditingItem, handleSaveItem } = props;
+    const { item,
+        setCurrentlyEditingItem,
+        handleSaveItem,
+        handleDeleteItem } = props;
 
     const [priceMode, setPriceMode] = useState<'unit' | 'total'>('total');
     const [quantity, setQuantity] = useState(item?.quantity ?? 1);
@@ -215,10 +219,9 @@ function ReceiptItemSheet(props: {
                                     variant="destructive"
                                     size="lg"
                                     className="w-full h-11 text-base"
-                                    onClick={() => {
-                                        // TODO: Delete item
-                                        setCurrentlyEditingItem(null)
-                                    }}
+                                    onClick={() =>
+                                        handleDeleteItem(item)
+                                    }
                                 >
                                     <Trash2 className="h-4 w-4 mr-2" />
                                     Delete Item

@@ -13,3 +13,9 @@ export async function editReceiptItem(item: ReceiptItemDto) {
         .returning();
     return receiptItemEntityToDtoHelper(updatedItem);
 }
+
+export async function deleteReceiptItem(item: ReceiptItemDto) {
+    await db.delete(receiptItem)
+        .where(eq(receiptItem.id, item.id));
+}
+

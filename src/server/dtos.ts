@@ -3,7 +3,8 @@ import { getAllReceiptInfo } from "./get-receipt/repository";
 
 export type ReceiptItemDto = {
     id: string;
-    rawText: string;
+    // If the item is custom from the user, this will be null
+    rawText: string | null;
     interpretedText: string;
     price: number;
     quantity: number;

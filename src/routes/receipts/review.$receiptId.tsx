@@ -8,8 +8,7 @@ import { Plus, Share2, Loader2, Receipt } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import ReceiptItemSheet from '@/components/edit-item-sheet'
 import { ReceiptItemDto } from '@/server/dtos'
-import { editReceiptItemRpc } from '@/server/edit-receipt/rpc-put-receipt'
-import { useEditReceiptItem } from '@/lib/hooks/useEditReceipt'
+import { useDeleteReceiptItem, useEditReceiptItem } from '@/lib/hooks/useEditReceipt'
 
 export const Route = createFileRoute('/receipts/review/$receiptId')({
     loader: async ({ params }) => {
@@ -23,6 +22,7 @@ function NotFoundReceipt() {
         Doesnt exist loser
     </div>)
 }
+
 function ProcessingReceipt() {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
@@ -32,6 +32,7 @@ function ProcessingReceipt() {
         </div>
     )
 }
+
 function ErrorReceipt(attempts: number) {
     return (
         <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
@@ -56,14 +57,22 @@ function RouteComponent() {
         return ErrorReceipt(receipt.attempts);
     }
     const { mutateAsync: editReceiptItem } = useEditReceiptItem(receipt.id);
+    const { mutateAsync: deleteReceiptItem } = useDeleteReceiptItem(receipt.id);
     const [receiptItems, setReceiptItems] = useState(receipt.items);
     const [isCreatingRoom, setIsCreatingRoom] = useState(false)
     const [currentlyEditingItem, setCurrentlyEditingItem] = useState<ReceiptItemDto | null>(null);
 
-    const saveEditItem = async (updatedItem: ReceiptItemDto) => {
+    const handleDeleteItem = async (updatedItem: ReceiptItemDto) => {
         // Optimistically update
-        console.log('save called with item')
-        console.log(updatedItem)
+        setReceiptItems(receiptItems.filter(i =>
+            i.id !== updatedItem.id
+        ));
+        setCurrentlyEditingItem(null);
+        deleteReceiptItem(updatedItem, {
+            onError: () => setReceiptItems(receipt.items)
+        });
+    };
+    const saveEditItem = async (updatedItem: ReceiptItemDto) => {
         setReceiptItems(receiptItems.map(i =>
             i.id === updatedItem.id
                 ? updatedItem
@@ -178,6 +187,7 @@ function RouteComponent() {
                 key={currentlyEditingItem?.id}
                 item={currentlyEditingItem}
                 setCurrentlyEditingItem={setCurrentlyEditingItem}
+                handleDeleteItem={handleDeleteItem}
                 handleSaveItem={saveEditItem} />
         </div>
     )
