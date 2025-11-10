@@ -60,6 +60,7 @@ export async function saveReceiptInformation(receiptId: string, parsedReceipt: P
             price: item.price?.toString() ?? null,
             rawText: item.rawText,
             interpretedText: item.interpreted,
+            modelInterpretedText: item.interpreted,
             quantity: item.quantity.toString(),
         }
     ))

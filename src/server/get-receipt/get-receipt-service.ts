@@ -1,39 +1,15 @@
 import { getAllReceiptInfo } from "./repository";
-import { ReceiptDto } from "./types";
+import { receiptEntityToDtoHelper, ReceiptDto } from "../dtos";
 
 type processingStatus = { status: 'processing' }
 type failedStatus = { attempts: number }
 
-export const parseNullable = (v: string | null): number | null =>
-    v === null ? null : parseFloat(v)
-
-const generateReceiptDtoFromDbReceipt = (
-    receipt: Awaited<ReturnType<typeof getAllReceiptInfo>>,
-): ReceiptDto => {
-    if (!receipt) return null
-    return {
-        id: receipt.id,
-        title: receipt.title,
-        subtotal: parseNullable(receipt.subtotal),
-        tax: parseNullable(receipt.tax),
-        tip: parseNullable(receipt.tip),
-        grandTotal: parseNullable(receipt.grandTotal),
-        createdAt: receipt.createdAt,
-        items: receipt.items.map((item) => ({
-            id: item.id,
-            rawText: item.rawText,
-            interpretedText: item.interpretedText,
-            price: parseFloat(item.price),
-            quantity: parseFloat(item.quantity),
-        })),
-    }
-}
 
 export type GetReceiptResponse = processingStatus | failedStatus | ReceiptDto;
 export async function getReceiptWithItems(receiptId: string): Promise<GetReceiptResponse> {
     const receiptInformation = await getAllReceiptInfo(receiptId);
     if (receiptInformation?.processingInfo.some(x => x.processingStatus === 'success')) {
-        return generateReceiptDtoFromDbReceipt(receiptInformation);
+        return receiptEntityToDtoHelper(receiptInformation);
     }
     if (receiptInformation?.processingInfo.some(x => x.processingStatus === 'processing')) {
         return { status: 'processing' }
