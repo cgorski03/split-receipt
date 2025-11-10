@@ -5,9 +5,11 @@ import { ReceiptItemCard } from '@/components/receipt-item-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Plus, Share2, Loader2, Receipt } from 'lucide-react'
-import { useState } from 'react'
-import { ReceiptItemDto } from '@/server/get-receipt/types'
-import { EditItemSheet } from '@/components/edit-item-sheet'
+import { useCallback, useState } from 'react'
+import ReceiptItemSheet from '@/components/edit-item-sheet'
+import { ReceiptItemDto } from '@/server/dtos'
+import { editReceiptItemRpc } from '@/server/edit-receipt/rpc-put-receipt'
+import { useEditReceiptItem } from '@/lib/hooks/useEditReceipt'
 
 export const Route = createFileRoute('/receipts/review/$receiptId')({
     loader: async ({ params }) => {
@@ -16,42 +18,67 @@ export const Route = createFileRoute('/receipts/review/$receiptId')({
     component: RouteComponent,
 })
 
+function NotFoundReceipt() {
+    return (<div>
+        Doesnt exist loser
+    </div>)
+}
+function ProcessingReceipt() {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Processing your receipt...</p>
+            <Button variant="outline" size="sm">Process Again</Button>
+        </div>
+    )
+}
+function ErrorReceipt(attempts: number) {
+    return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
+            <div className="text-center">
+                <p className="text-lg font-semibold mb-2">Processing Failed</p>
+                <p className="text-sm text-muted-foreground">
+                    Failed after {attempts} attempts
+                </p>
+            </div>
+            <Button>Try Again</Button>
+        </div>
+    )
+}
+
 function RouteComponent() {
     const receipt = Route.useLoaderData()
+    if (receipt === null) { return NotFoundReceipt() }
+    if (isProcessing(receipt)) {
+        return ProcessingReceipt()
+    }
+    if (isFailed(receipt)) {
+        return ErrorReceipt(receipt.attempts);
+    }
+    const { mutateAsync: editReceiptItem } = useEditReceiptItem(receipt.id);
+    const [receiptItems, setReceiptItems] = useState(receipt.items);
     const [isCreatingRoom, setIsCreatingRoom] = useState(false)
     const [currentlyEditingItem, setCurrentlyEditingItem] = useState<ReceiptItemDto | null>(null);
-    const handleEditItem = (item: ReceiptItemDto) => {
+
+    const saveEditItem = async (updatedItem: ReceiptItemDto) => {
+        // Optimistically update
+        console.log('save called with item')
+        console.log(updatedItem)
+        setReceiptItems(receiptItems.map(i =>
+            i.id === updatedItem.id
+                ? updatedItem
+                : i
+        ));
+        setCurrentlyEditingItem(null);
+        editReceiptItem(updatedItem, {
+            onError: () => setReceiptItems(receipt.items)
+        });
+    };
+
+    const handleEditItem = useCallback((item: ReceiptItemDto) => {
         setCurrentlyEditingItem(item);
-    }
+    }, []);
 
-    if (receipt === null) {
-        return (<div>
-            Doesnt exist loser
-        </div>)
-    }
-    if (isProcessing(receipt)) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Processing your receipt...</p>
-                <Button variant="outline" size="sm">Process Again</Button>
-            </div>
-        )
-    }
-
-    if (isFailed(receipt)) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen p-4 gap-4">
-                <div className="text-center">
-                    <p className="text-lg font-semibold mb-2">Processing Failed</p>
-                    <p className="text-sm text-muted-foreground">
-                        Failed after {receipt.attempts} attempts
-                    </p>
-                </div>
-                <Button>Try Again</Button>
-            </div>
-        )
-    }
 
     const subtotal = receipt.items
         .reduce((sum, item) => sum + item.price, 0)
@@ -77,9 +104,9 @@ function RouteComponent() {
 
                 {/* Items Grid */}
                 <div className="space-y-2 mb-4">
-                    {receipt.items.map((item, index) => (
+                    {receiptItems.map((item) => (
                         <ReceiptItemCard
-                            key={index}
+                            key={item.id}
                             item={item}
                             onEdit={() => handleEditItem(item)}
                         />
@@ -147,7 +174,11 @@ function RouteComponent() {
                 {/* Mobile bottom padding for fixed button alternative */}
                 <div className="h-4 md:hidden" />
             </div>
-            <EditItemSheet key={currentlyEditingItem?.id} item={currentlyEditingItem} setCurrentlyEditingItem={setCurrentlyEditingItem} />
+            <ReceiptItemSheet
+                key={currentlyEditingItem?.id}
+                item={currentlyEditingItem}
+                setCurrentlyEditingItem={setCurrentlyEditingItem}
+                handleSaveItem={saveEditItem} />
         </div>
     )
 }

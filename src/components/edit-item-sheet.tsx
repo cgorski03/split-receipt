@@ -11,7 +11,8 @@ function ReceiptItemSheet(props: {
     setCurrentlyEditingItem: (item: ReceiptItemDto | null) => void,
     handleSaveItem: (item: ReceiptItemDto) => void,
 }) {
-    const { item, setCurrentlyEditingItem } = props;
+    const { item, setCurrentlyEditingItem, handleSaveItem } = props;
+
     const [priceMode, setPriceMode] = useState<'unit' | 'total'>('total');
     const [quantity, setQuantity] = useState(item?.quantity ?? 1);
     const [totalPrice, setTotalPrice] = useState(item?.price ?? 0);
@@ -19,6 +20,20 @@ function ReceiptItemSheet(props: {
     const [priceInput, setPriceInput] = useState(
         (priceMode === 'unit' ? unitPrice : totalPrice).toString()
     );
+    const [itemText, setItemText] = useState(item?.interpretedText ?? "No Title");
+    const saveItem = () => {
+        // New Receipt Item DTO 
+        if (!item) return;
+        const updatedItem: ReceiptItemDto = {
+            id: item.id,
+            quantity: quantity,
+            rawText: item.rawText,
+            interpretedText: itemText,
+            price: totalPrice
+        }
+        handleSaveItem(updatedItem);
+
+    }
     const handlePriceChange = (value: number) => {
         if (priceMode === 'unit') {
             setTotalPrice(value * quantity);
@@ -60,7 +75,8 @@ function ReceiptItemSheet(props: {
                                 <Input
                                     id="itemName"
                                     type="text"
-                                    defaultValue={item.interpretedText}
+                                    value={itemText}
+                                    onChange={(e) => setItemText(e.target.value)}
                                     className="text-lg h-11 px-4"
                                     placeholder="e.g., Cheeseburger"
                                 />
@@ -189,10 +205,7 @@ function ReceiptItemSheet(props: {
                                     <Button
                                         size="lg"
                                         className="flex-1 h-11 text-base"
-                                        onClick={() => {
-                                            // TODO: Save with totalPrice and quantity
-                                            setCurrentlyEditingItem(null)
-                                        }}
+                                        onClick={saveItem}
                                     >
                                         Save Changes
                                     </Button>
