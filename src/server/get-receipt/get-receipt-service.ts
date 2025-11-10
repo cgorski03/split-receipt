@@ -1,27 +1,10 @@
 import { getAllReceiptInfo } from "./repository";
+import { ReceiptDto } from "./types";
 
 type processingStatus = { status: 'processing' }
 type failedStatus = { attempts: number }
-export type ReceiptItemDto = {
-    id: string;
-    rawText: string;
-    interpretedText: string;
-    price: number;
-    quantity: number;
-}
-export type ReceiptDto = {
-    id: string;
-    title: string | null;
-    subtotal: number | null;
-    tax: number | null;
-    tip: number | null;
-    grandTotal: number | null;
-    createdAt: Date | null;
-    items: ReceiptItemDto[]
 
-} | null;
-
-const parseNullable = (v: string | null): number | null =>
+export const parseNullable = (v: string | null): number | null =>
     v === null ? null : parseFloat(v)
 
 const generateReceiptDtoFromDbReceipt = (

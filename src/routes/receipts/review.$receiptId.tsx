@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Plus, Share2, Loader2, Receipt } from 'lucide-react'
 import { useState } from 'react'
+import { ReceiptItemDto } from '@/server/get-receipt/types'
+import { EditItemSheet } from '@/components/edit-item-sheet'
 
 export const Route = createFileRoute('/receipts/review/$receiptId')({
     loader: async ({ params }) => {
@@ -17,6 +19,10 @@ export const Route = createFileRoute('/receipts/review/$receiptId')({
 function RouteComponent() {
     const receipt = Route.useLoaderData()
     const [isCreatingRoom, setIsCreatingRoom] = useState(false)
+    const [currentlyEditingItem, setCurrentlyEditingItem] = useState<ReceiptItemDto | null>(null);
+    const handleEditItem = (item: ReceiptItemDto) => {
+        setCurrentlyEditingItem(item);
+    }
 
     if (receipt === null) {
         return (<div>
@@ -75,7 +81,7 @@ function RouteComponent() {
                         <ReceiptItemCard
                             key={index}
                             item={item}
-                            onEdit={() => {/* TODO: Open edit modal */ }}
+                            onEdit={() => handleEditItem(item)}
                         />
                     ))}
                 </div>
@@ -138,6 +144,7 @@ function RouteComponent() {
                     </div>
                 </Card>
 
+                <EditItemSheet item={currentlyEditingItem} setCurrentlyEditingItem={setCurrentlyEditingItem} />
                 {/* Mobile bottom padding for fixed button alternative */}
                 <div className="h-4 md:hidden" />
             </div>
