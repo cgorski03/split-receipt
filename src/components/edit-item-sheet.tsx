@@ -46,7 +46,18 @@ function ReceiptItemSheet(props: {
         handleSaveItem(newItem, isCreate);
     };
 
-    const handlePriceChange = (value: number) => {
+    const handlePriceModeChange = (mode: 'unit' | 'total') => {
+        setPriceMode(mode);
+        if (mode === 'unit') {
+            const newPriceInput = totalPrice / quantity;
+            setPriceInput((newPriceInput).toFixed(2));
+        }
+        else {
+            setPriceInput((unitPrice * quantity).toFixed(2));
+        }
+    }
+
+    const handlePriceInputChange = (value: number) => {
         if (priceMode === 'unit') {
             setTotalPrice(value * quantity);
         } else {
@@ -54,10 +65,10 @@ function ReceiptItemSheet(props: {
         }
     };
 
-    const handleQuantityChange = (value: number) => {
+    const handleQuantityInputChange = (value: number) => {
         setQuantity(value);
         if (priceMode === 'unit') {
-            setTotalPrice(unitPrice * value);
+            setTotalPrice(Number(priceInput) * value);
         }
     };
 
@@ -104,7 +115,7 @@ function ReceiptItemSheet(props: {
                             <div className="inline-flex rounded-lg bg-muted p-1 w-full">
                                 <button
                                     type="button"
-                                    onClick={() => setPriceMode('total')}
+                                    onClick={() => handlePriceModeChange('total')}
                                     className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-all ${priceMode === 'total'
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -114,7 +125,7 @@ function ReceiptItemSheet(props: {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setPriceMode('unit')}
+                                    onClick={() => handlePriceModeChange('unit')}
                                     className={`flex-1 rounded-md px-4 py-2.5 text-sm font-medium transition-all ${priceMode === 'unit'
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground hover:text-foreground'
@@ -143,7 +154,7 @@ function ReceiptItemSheet(props: {
                                         value={priceInput}
                                         onChange={(e) => {
                                             setPriceInput(e.target.value);
-                                            handlePriceChange(parseFloat(e.target.value) || 0);
+                                            handlePriceInputChange(parseFloat(e.target.value) || 0);
                                         }}
                                         className="text-lg h-11 pl-8 pr-4"
                                         placeholder="0.00"
@@ -161,7 +172,7 @@ function ReceiptItemSheet(props: {
                                     step="0.01"
                                     min="0.00"
                                     value={quantity}
-                                    onChange={(e) => handleQuantityChange(parseFloat(e.target.value))}
+                                    onChange={(e) => handleQuantityInputChange(parseFloat(e.target.value))}
                                     className="text-lg h-11 px-4"
                                     placeholder="1"
                                 />
