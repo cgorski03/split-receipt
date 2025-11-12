@@ -4,11 +4,12 @@ import { isFailed, isProcessing } from '@/lib/receipt-utils'
 import { ReceiptItemCard } from '@/components/receipt-item-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Plus, Share2, Loader2, Receipt } from 'lucide-react'
-import { useCallback, useState } from 'react'
+import { Plus, Share2, Loader2, Receipt, AlertCircle } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
 import ReceiptItemSheet from '@/components/edit-item-sheet'
-import { ReceiptItemDto, SaveReceiptItemDto } from '@/server/dtos'
+import { ReceiptItemDto } from '@/server/dtos'
 import { useCreateReceiptItem, useDeleteReceiptItem, useEditReceiptItem } from '@/lib/hooks/useEditReceipt'
+import { ReceiptSummarySheet } from '@/components/receipt-summary-sheet'
 
 export const Route = createFileRoute('/receipts/review/$receiptId')({
     loader: async ({ params }) => {
@@ -48,21 +49,26 @@ function ErrorReceipt(attempts: number) {
 }
 
 function RouteComponent() {
-    const receipt = Route.useLoaderData()
-    if (receipt === null) { return NotFoundReceipt() }
-    if (isProcessing(receipt)) {
+    const receiptInfoFromServer = Route.useLoaderData()
+    if (receiptInfoFromServer === null) { return NotFoundReceipt() }
+    if (isProcessing(receiptInfoFromServer)) {
         return ProcessingReceipt()
     }
-    if (isFailed(receipt)) {
-        return ErrorReceipt(receipt.attempts);
+    if (isFailed(receiptInfoFromServer)) {
+        return ErrorReceipt(receiptInfoFromServer.attempts);
     }
+    // Enable optimistic updates
+    const [receipt, setReceipt] = useState(receiptInfoFromServer);
+    const [receiptItems, setReceiptItems] = useState(receipt.items);
+
+    // Component state
+    const [showingItemSheet, setShowingItemSheet] = useState<boolean>(false);
+    const [showSummarySheet, setShowSummarySheet] = useState<boolean>(false);
+    const [receiptItemForSheet, setReceiptItemForSheet] = useState<ReceiptItemDto | null>(null);
+
     const { mutateAsync: editReceiptItem } = useEditReceiptItem(receipt.id);
     const { mutateAsync: deleteReceiptItem } = useDeleteReceiptItem(receipt.id);
     const { mutateAsync: createReceiptItem } = useCreateReceiptItem(receipt.id);
-    const [receiptItems, setReceiptItems] = useState(receipt.items);
-    const [isCreatingRoom, setIsCreatingRoom] = useState(false)
-    const [showingItemSheet, setShowingItemSheet] = useState<boolean>(false);
-    const [receiptItemForSheet, setReceiptItemForSheet] = useState<ReceiptItemDto | null>(null);
 
     const handleDeleteItem = async (updatedItem: ReceiptItemDto) => {
         // Optimistically update
@@ -96,6 +102,7 @@ function RouteComponent() {
         setShowingItemSheet(true);
         setReceiptItemForSheet(null);
     };
+
     const handleEditItem = useCallback((item: ReceiptItemDto) => {
         setReceiptItemForSheet(item);
         setShowingItemSheet(true);
@@ -106,9 +113,18 @@ function RouteComponent() {
         setReceiptItemForSheet(null);
     }, []);
 
-    const subtotal = receiptItems
-        .reduce((sum, item) => sum + item.price, 0)
-        .toFixed(2);
+    const subtotal = useMemo(() => {
+        return receiptItems
+            .reduce((sum, item) => sum + item.price, 0)
+            .toFixed(2);
+    }, [receiptItems]);
+
+
+    const totalHasError = useMemo(() => {
+        const epsilon = 0.01;
+        const calculated = Number(subtotal) + (receipt.tip ?? 0) + (receipt.tax ?? 0);
+        return Math.abs(calculated - (receipt.grandTotal ?? 0)) >= epsilon;
+    }, [subtotal, receipt])
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
@@ -120,7 +136,7 @@ function RouteComponent() {
                             <Receipt className="h-6 w-6 text-primary" />
                         </div>
                         <div>
-                            <h1 className="text-2xl md:text-3xl font-bold">Review Receipt</h1>
+                            <h1 className="text-2xl md:text-3xl font-bold">{receipt.title}</h1>
                             <p className="text-sm text-muted-foreground">
                                 {receiptItems.length} items • ${subtotal}
                             </p>
@@ -151,7 +167,10 @@ function RouteComponent() {
 
                 {/* Summary Card */}
                 <Card className="mb-6 md:mb-0 py-0 gap-0 overflow-hidden">
-                    <div className="bg-gradient-to-br from-primary/5 to-primary/10 p-4 border-b">
+                    <button
+                        onClick={() => setShowSummarySheet(true)}
+                        className="w-full bg-gradient-to-br from-primary/5 to-primary/10 p-4 border-b rounded-t-lg text-left hover:from-primary/10 hover:to-primary/15 transition-all h-auto"
+                    >
                         <div className="flex items-center justify-between">
                             <span className="text-sm font-medium text-muted-foreground">Parsed Subtotal</span>
                             <span className="text-2xl font-bold">${receipt.subtotal?.toFixed(2)}</span>
@@ -175,15 +194,14 @@ function RouteComponent() {
                         <p className="text-xs text-muted-foreground mt-1">
                             Tax & tip will be split proportionally
                         </p>
-                    </div>
+                    </button>
                     {/* Create Room Button */}
-                    <div className="p-4">
+                    <div className="p-4 space-y-3">
                         <Button
                             className="w-full h-11"
-                            onClick={() => setIsCreatingRoom(true)}
-                            disabled={isCreatingRoom}
+                            disabled={totalHasError}
                         >
-                            {isCreatingRoom ? (
+                            {false ? (
                                 <>
                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                     Creating Room...
@@ -195,6 +213,12 @@ function RouteComponent() {
                                 </>
                             )}
                         </Button>
+                        {totalHasError && (
+                            <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                                <span>Click on the total above to resolve issues with grand total calculation</span>
+                            </div>
+                        )}
                     </div>
                 </Card>
 
@@ -208,6 +232,14 @@ function RouteComponent() {
                 closeSheet={closeSheet}
                 handleDeleteItem={handleDeleteItem}
                 handleSaveItem={saveReceiptItem} />
+            <ReceiptSummarySheet
+                showSheet={showSummarySheet}
+                receipt={receipt}
+                closeSheet={() => setShowSummarySheet(false)}
+                handleSaveSummary={async (_) => {
+                    // Save to backend
+                }}
+            />
         </div >
     )
 }
