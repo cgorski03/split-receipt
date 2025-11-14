@@ -39,7 +39,7 @@ export function ReceiptItemCard(props: {
                         <div className="flex items-center gap-1.5">
                             <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
                             <span className="text-xl font-bold text-foreground">
-                                {item.price}
+                                {item.price.toFixed(2)}
                             </span>
                         </div>
 

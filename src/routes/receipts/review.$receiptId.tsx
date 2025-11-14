@@ -111,7 +111,7 @@ function RouteComponent() {
             <ReviewReceiptHeader
                 title={receipt.title ?? "Set Title"}
                 itemCount={receiptItems.length}
-                subtotal={subtotal}
+                grandTotal={receipt.grandTotal ?? 0}
             />
             <div className="container max-w-2xl mx-auto px-4 py-6 md:py-12">
                 {/* Header */}

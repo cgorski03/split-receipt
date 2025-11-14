@@ -3,13 +3,13 @@ import { Receipt } from 'lucide-react';
 interface ReviewReceiptHeaderBasicProps {
     title: string;
     itemCount: number;
-    subtotal: string; // already formatted like "12.34"
+    grandTotal: number; // already formatted like "12.34"
 }
 
 export function ReviewReceiptHeader({
     title,
     itemCount,
-    subtotal,
+    grandTotal,
 }: ReviewReceiptHeaderBasicProps) {
     return (
         <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70 border-b">
@@ -26,7 +26,7 @@ export function ReviewReceiptHeader({
                     </div>
 
                     <div className="text-right shrink-0">
-                        <span className="text-2xl font-bold">${subtotal}</span>
+                        <span className="text-2xl font-bold">${grandTotal.toFixed(2)}</span>
                     </div>
                 </div>
             </div>
