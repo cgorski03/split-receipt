@@ -20,6 +20,8 @@ const calculateAmount = (
     return value;
 };
 
+type TipTaxMode = 'percentage' | 'absolute';
+
 export function ReceiptSummarySheet(props: {
     showSheet: boolean;
     subtotal: string;
@@ -30,9 +32,37 @@ export function ReceiptSummarySheet(props: {
     const { showSheet, receipt, subtotal, closeSheet } = props;
     const { mutateAsync: saveReceiptTotal, isPending: savingReceiptTotal } = useFinalizeReceipt();
 
-    const [taxMode, setTaxMode] = useState<'percentage' | 'absolute'>('absolute');
-    const [tipMode, setTipMode] = useState<'percentage' | 'absolute'>('absolute');
+    const [taxMode, setTaxMode] = useState<TipTaxMode>('absolute');
+    const [tipMode, setTipMode] = useState<TipTaxMode>('absolute');
 
+    const handleSetTaxMode = (mode: TipTaxMode) => {
+        // I want to handle actually converting the persons value to the other type 
+        if (mode === 'percentage') {
+            // Person wants to convert to percentage from absolute value
+            // Basically, what was the percentage before? 
+            const percentage = taxAmount / subtotalFloat * 100;
+            setTaxInputValue(percentage.toFixed(2));
+            setTaxMode('percentage');
+        } else {
+            const absolute = subtotalFloat * parseFloat(taxInputValue) / 100;
+            setTaxInputValue(absolute.toFixed(2));
+            setTaxMode('absolute');
+        }
+    }
+    const handleSetTipMode = (mode: TipTaxMode) => {
+        // I want to handle actually converting the persons value to the other type 
+        if (mode === 'percentage') {
+            // Person wants to convert to percentage from absolute value
+            // Basically, what was the percentage before? 
+            const percentage = tipAmount / subtotalFloat * 100;
+            setTipInputValue(percentage.toFixed(2));
+            setTipMode('percentage');
+        } else {
+            const absolute = subtotalFloat * parseFloat(tipInputValue) / 100;
+            setTipInputValue(absolute.toFixed(2));
+            setTipMode('absolute');
+        }
+    }
     const [taxInputValue, setTaxInputValue] = useState<string>(receipt?.tax?.toFixed(2) ?? "");
     const [tipInputValue, setTipInputValue] = useState<string>(receipt?.tip?.toFixed(2) ?? "");
     const subtotalFloat = parseFloat(subtotal);
@@ -99,7 +129,7 @@ export function ReceiptSummarySheet(props: {
                             <div className="inline-flex rounded-lg bg-muted p-1">
                                 <button
                                     type="button"
-                                    onClick={() => setTaxMode('absolute')}
+                                    onClick={() => handleSetTaxMode('absolute')}
                                     className={`text-lg font-medium rounded-md transition-all min-w-[48px] ${taxMode === 'absolute'
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground'
@@ -109,7 +139,7 @@ export function ReceiptSummarySheet(props: {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setTaxMode('percentage')}
+                                    onClick={() => handleSetTaxMode('percentage')}
                                     className={`text-lg font-medium rounded-md transition-all min-w-[48px] ${taxMode === 'percentage'
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground'
@@ -151,7 +181,7 @@ export function ReceiptSummarySheet(props: {
                             <div className="inline-flex rounded-lg bg-muted p-1">
                                 <button
                                     type="button"
-                                    onClick={() => setTipMode('absolute')}
+                                    onClick={() => handleSetTipMode('absolute')}
                                     className={`text-lg font-medium rounded-md transition-all min-w-[48px] ${tipMode === 'absolute'
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground'
@@ -161,7 +191,7 @@ export function ReceiptSummarySheet(props: {
                                 </button>
                                 <button
                                     type="button"
-                                    onClick={() => setTipMode('percentage')}
+                                    onClick={() => handleSetTipMode('percentage')}
                                     className={`text-lg font-medium rounded-md transition-all min-w-[48px] ${tipMode === 'percentage'
                                         ? 'bg-background text-foreground shadow-sm'
                                         : 'text-muted-foreground'

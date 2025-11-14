@@ -7,7 +7,7 @@ import z from "zod";
 import { google } from "../llm";
 import { createProcessingError, createReceiptStub as beginReceiptProcessingRun, saveReceiptInformation, finishReceiptProcessingRunSuccess } from "./repository";
 
-const RECEIPT_PROCESSING_MODEL = 'gemini-2.5-flash';
+const RECEIPT_PROCESSING_MODEL = 'gemini-2.5-pro';
 
 export async function processReceipt(imageBuffer: ArrayBuffer) {
     const ai = google();
