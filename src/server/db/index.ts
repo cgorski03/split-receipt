@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema'
+
 const client = postgres({
     host: process.env.DB_HOST,
     port: parseInt(process.env.DB_PORT!),
@@ -10,3 +11,9 @@ const client = postgres({
 });
 
 export const db = drizzle(client, { schema });
+
+
+export { user, session, account, verification } from './auth-schema';
+
+export * from './schema';
+export type { ReceiptSelect, ReceiptInsert } from './schema';

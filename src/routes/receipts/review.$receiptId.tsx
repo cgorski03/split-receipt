@@ -8,11 +8,11 @@ import { Plus, Share2, Loader2, AlertCircle } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import ReceiptItemSheet from '@/components/edit-item-sheet'
 import { ReceiptItemDto } from '@/server/dtos'
-import { useCreateReceiptItem, useDeleteReceiptItem, useEditReceiptItem } from '@/lib/hooks/useEditReceipt'
 import { ReceiptSummarySheet } from '@/components/receipt-summary-sheet'
 import { ReviewReceiptHeader } from '@/components/review/receipt-header'
 import { ErrorReceipt, NotFoundReceipt, ProcessingReceipt } from '@/components/processing-errors'
-import { useGetReceiptReview, useReceiptIsValid } from '@/lib/hooks/useGetReceipt'
+import { useGetReceiptReview, useReceiptIsValid } from '@/hooks/useGetReceipt'
+import { useCreateReceiptItem, useDeleteReceiptItem, useEditReceiptItem } from '@/hooks/useEditReceipt'
 
 export const Route = createFileRoute('/receipts/review/$receiptId')({
     loader: async ({ params }) => {

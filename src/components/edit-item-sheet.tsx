@@ -31,7 +31,7 @@ function ReceiptItemSheet(props: {
     const [totalPrice, setTotalPrice] = useState(initialPrice);
     const unitPrice = quantity > 0 ? totalPrice / quantity : 0;
     const [priceInput, setPriceInput] = useState(
-        (priceMode === 'unit' ? initialUnitPrice : initialPrice).toString()
+        (priceMode === 'unit' ? initialUnitPrice : initialPrice).toFixed(2)
     );
     const [itemText, setItemText] = useState(item?.interpretedText ?? '');
 
